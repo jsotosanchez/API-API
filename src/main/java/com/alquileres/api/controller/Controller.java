@@ -4,10 +4,7 @@ package com.alquileres.api.controller;
 import controlador.Controlador;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import views.EdificioView;
-import views.PersonaView;
-import views.ReclamoView;
-import views.UnidadView;
+import views.*;
 
 import java.util.Date;
 import java.util.List;
@@ -46,16 +43,6 @@ public class Controller {
         return unidades;
     }
 
-    @PostMapping("personas/{nombre}/{documento}")
-    public void addPersona(@PathVariable String nombre, @PathVariable String documento){
-        this.controlador.agregarPersona(documento, nombre);
-    }
-
-    @DeleteMapping("/personas/{documento}")
-    public void deletePersona(@PathVariable String documento){
-        this.controlador.eliminarPersona(documento);
-    }
-
     @GetMapping("edificios/{id}/habitantes")
     public List<PersonaView> getHabitantesByEdificio(@PathVariable int id){
         List<PersonaView> habitantes = this.controlador.habitantesPorEdificio(id);
@@ -85,10 +72,25 @@ public class Controller {
         this.controlador.agregarReclamo(codigo,piso,numero,documento,ubicacion,descripcion);
     }
 
+    @PutMapping("reclamos/{numero}/cambiarEstado/{estado}")
+    public void cambiarEstadoReclamo(@PathVariable int numero, @PathVariable String estado){
+        this.controlador.cambiarEstado(numero, Estado.valueOf(estado));
+    }
+
     @GetMapping("reclamos/{id}")
     public ReclamoView getReclamoById(@PathVariable int id){
         ReclamoView reclamo = this.controlador.reclamosPorNumero(id);
         return reclamo;
+    }
+
+    @PostMapping("personas/{nombre}/{documento}")
+    public void addPersona(@PathVariable String nombre, @PathVariable String documento){
+        this.controlador.agregarPersona(documento, nombre);
+    }
+
+    @DeleteMapping("personas/{documento}")
+    public void deletePersona(@PathVariable String documento){
+        this.controlador.eliminarPersona(documento);
     }
 
     @GetMapping("personas/{documento}/reclamos")
