@@ -1,9 +1,9 @@
 package com.alquileres.api.controller;
 
-
 import controlador.Controlador;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import views.*;
 
 import java.util.Date;
@@ -15,14 +15,13 @@ import java.util.Set;
 public class Controller {
 
     private Controlador controlador;
+    private StorageService storageService;
 
-    public Controller(Controlador controlador){
+    public Controller(Controlador controlador, StorageService storageService){
         this.controlador = controlador;
+        this.storageService = storageService;
     }
 
-    /**
-     * Simply selects the home view to render by returning its name.
-     */
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String home() {
 
@@ -72,7 +71,7 @@ public class Controller {
         this.controlador.agregarReclamo(codigo,piso,numero,documento,ubicacion,descripcion);
     }
 
-    @PutMapping("reclamos/{numero}/cambiarEstado/{estado}")
+    @PatchMapping("reclamos/{numero}/cambiarEstado/{estado}")
     public void cambiarEstadoReclamo(@PathVariable int numero, @PathVariable String estado){
         this.controlador.cambiarEstado(numero, Estado.valueOf(estado));
     }
@@ -81,6 +80,15 @@ public class Controller {
     public ReclamoView getReclamoById(@PathVariable int id){
         ReclamoView reclamo = this.controlador.reclamosPorNumero(id);
         return reclamo;
+    }
+
+    @PostMapping("reclamos/{numero}/imagenes")
+    public void agregarImagen(@RequestParam("file") MultipartFile file, @PathVariable int numero){
+        if(!file.getContentType().startsWith("image/")){
+            throw new ArchivoInvalido(file.getContentType());
+        }
+        String nombreFisicoDelArchivo = storageService.store(file);
+        this.controlador.agregarImagenAReclamo(numero,nombreFisicoDelArchivo, file.getContentType());
     }
 
     @PostMapping("personas/{nombre}/{documento}")
@@ -146,4 +154,5 @@ public class Controller {
     public void liberarUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero){
         this.controlador.liberarUnidad(codigo, piso, numero);
     }
+
 }
