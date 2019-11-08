@@ -12,6 +12,7 @@ import java.util.Set;
 
 @Slf4j
 @RestController
+@CrossOrigin
 public class Controller {
 
     private Controlador controlador;
@@ -35,6 +36,12 @@ public class Controller {
         return edificios;
     }
 
+    @GetMapping("edificios/{id}")
+    public EdificioView getEdificioById(@PathVariable int id){
+        EdificioView edificio = this.controlador.buscarEdificioPorCodigo(id);
+        return edificio;
+    }
+
     @GetMapping("edificios/{id}/unidades")
 //    @RequestMapping(value = "/edificios/{id}/unidades", method = RequestMethod.GET, produces = {"application/json"})
     public List<UnidadView> getUnidadesByEdificio(@PathVariable int id){
@@ -55,8 +62,8 @@ public class Controller {
     }
 
     @GetMapping("edificios/{id}/habilitados")
-    public List<PersonaView> getHabilitadosByEdificio(@PathVariable int id){
-        List<PersonaView> habilitados = this.controlador.habilitadosPorEdificio(id);
+    public Set<PersonaView> getHabilitadosByEdificio(@PathVariable int id){
+        Set<PersonaView> habilitados = this.controlador.habilitadosPorEdificio(id);
         return habilitados;
     }
 
@@ -105,6 +112,11 @@ public class Controller {
     public List<ReclamoView> getReclamoByPersona(@PathVariable String documento){
         List<ReclamoView> reclamos = this.controlador.reclamosPorPersona(documento);
         return reclamos;
+    }
+
+    @GetMapping("unidades/{id}")
+    public UnidadView getUnidadById(@PathVariable int id){
+        return this.controlador.getUnidadById(id);
     }
 
     @GetMapping("unidades/{codigo}/{piso}/{numero}/reclamos")
