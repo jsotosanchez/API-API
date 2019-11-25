@@ -2,13 +2,21 @@ package com.alquileres.api.controller;
 
 import controlador.Controlador;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import views.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -18,7 +26,7 @@ public class Controller {
     private Controlador controlador;
     private StorageService storageService;
 
-    public Controller(Controlador controlador, StorageService storageService){
+    public Controller(Controlador controlador, StorageService storageService) {
         this.controlador = controlador;
         this.storageService = storageService;
     }
@@ -31,140 +39,174 @@ public class Controller {
     }
 
     @GetMapping("edificios")
-    public List<EdificioView> getEdificios(){
-        List<EdificioView> edificios = this.controlador.getEdificios();
-        return edificios;
+    public List<EdificioView> getEdificios(@RequestHeader("X-Custom-Documento") String documento, @RequestHeader("X-Custom-TipoUsuario") TipoUsuario tipoUsuario) {
+        if (tipoUsuario.equals(TipoUsuario.administrador)) {
+            return this.controlador.getEdificios();
+        }
+
+        return this.controlador.getEdificiosPorDuenio(documento);
     }
 
     @GetMapping("edificios/{id}")
-    public EdificioView getEdificioById(@PathVariable int id){
-        EdificioView edificio = this.controlador.buscarEdificioPorCodigo(id);
-        return edificio;
+    public EdificioView getEdificioById(@PathVariable int id) {
+        return this.controlador.buscarEdificioPorCodigo(id);
     }
 
     @GetMapping("edificios/{id}/unidades")
-//    @RequestMapping(value = "/edificios/{id}/unidades", method = RequestMethod.GET, produces = {"application/json"})
-    public List<UnidadView> getUnidadesByEdificio(@PathVariable int id){
-        List<UnidadView> unidades = this.controlador.getUnidadesPorEdificio(id);
-        return unidades;
+    public List<UnidadView> getUnidadesByEdificio(@PathVariable int id, @RequestHeader("X-Custom-Documento") String documento, @RequestHeader("X-Custom-TipoUsuario") TipoUsuario tipoUsuario) {
+        if (tipoUsuario.equals(TipoUsuario.administrador)) {
+            return this.controlador.getUnidadesPorEdificio(id);
+        }
+
+        return this.controlador.getUnidadesPorEdificioYPersona(id, documento);
     }
 
     @GetMapping("edificios/{id}/habitantes")
-    public List<PersonaView> getHabitantesByEdificio(@PathVariable int id){
-        List<PersonaView> habitantes = this.controlador.habitantesPorEdificio(id);
-        return habitantes;
+    public List<PersonaView> getHabitantesByEdificio(@PathVariable int id) {
+        return this.controlador.habitantesPorEdificio(id);
     }
 
     @GetMapping("edificios/{id}/duenios")
-    public Set<PersonaView> getDueniosByEdificio(@PathVariable int id){
-        Set<PersonaView> duenios = this.controlador.dueniosPorEdificio(id);
-        return duenios;
+    public Set<PersonaView> getDueniosByEdificio(@PathVariable int id) {
+        return this.controlador.dueniosPorEdificio(id);
     }
 
     @GetMapping("edificios/{id}/habilitados")
-    public Set<PersonaView> getHabilitadosByEdificio(@PathVariable int id){
-        Set<PersonaView> habilitados = this.controlador.habilitadosPorEdificio(id);
-        return habilitados;
+    public Set<PersonaView> getHabilitadosByEdificio(@PathVariable int id) {
+        return this.controlador.habilitadosPorEdificio(id);
     }
 
     @GetMapping("edificios/{id}/reclamos")
-    public List<ReclamoView> getReclamosByEdificio(@PathVariable int id){
-        List<ReclamoView> reclamos = this.controlador.reclamosPorEdificio(id);
-        return reclamos;
+    public List<ReclamoView> getReclamosByEdificio(@PathVariable int id) {
+        return this.controlador.reclamosPorEdificio(id);
     }
 
-    @PostMapping("reclamos/{codigo}/{piso}/{numero}/{documento}/{ubicacion}/{descripcion}")
-    public void addReclamo(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @PathVariable String documento, @PathVariable String ubicacion, @PathVariable String descripcion){
-        this.controlador.agregarReclamo(codigo,piso,numero,documento,ubicacion,descripcion);
+    @GetMapping("reclamos")
+    public List<ReclamoView> getReclamos(@RequestHeader("X-Custom-Documento") String documento, @RequestHeader("X-Custom-TipoUsuario") TipoUsuario tipoUsuario) {
+        if(tipoUsuario.equals(TipoUsuario.administrador)){
+            return this.controlador.getReclamos();
+        }
+        return this.controlador.getReclamosByPersona(documento);
+    }
+
+    @PostMapping("reclamos/generar")
+    public void addReclamo(@RequestBody GenerarReclamoBody body, @RequestHeader("X-Custom-Documento") String documento) {
+        this.controlador.agregarReclamo(body.edificio, body.piso, body.numero, documento, body.ubicacion, body.descripcion);
     }
 
     @PatchMapping("reclamos/{numero}/cambiarEstado/{estado}")
-    public void cambiarEstadoReclamo(@PathVariable int numero, @PathVariable String estado){
+    public void cambiarEstadoReclamo(@PathVariable int numero, @PathVariable String estado) {
         this.controlador.cambiarEstado(numero, Estado.valueOf(estado));
     }
 
     @GetMapping("reclamos/{id}")
-    public ReclamoView getReclamoById(@PathVariable int id){
-        ReclamoView reclamo = this.controlador.reclamosPorNumero(id);
-        return reclamo;
+    public ReclamoView getReclamoById(@PathVariable int id) {
+        return this.controlador.reclamosPorNumero(id);
+    }
+
+    @GetMapping("reclamos/{id}/imagenes")
+    public List<Integer> getImagenesByReclamo(@PathVariable int id) {
+        return this.controlador.getImagenByReclamo(id).stream().map(ImagenView::getNumero).collect(Collectors.toList());
+    }
+
+    @GetMapping("reclamos/{id}/imagenes/{idImagen}")
+    public ResponseEntity getImagenesByReclamo(@PathVariable int id, @PathVariable int idImagen) throws FileNotFoundException {
+        ImagenView imagen = this.controlador.getImagen(idImagen);
+        File fileImagen = storageService.load(imagen.getDireccion());
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.add("Content-Type", imagen.getTipo());
+        InputStreamResource body = new InputStreamResource(new FileInputStream(fileImagen));
+        return new ResponseEntity(body,responseHeaders, HttpStatus.OK);
     }
 
     @PostMapping("reclamos/{numero}/imagenes")
-    public void agregarImagen(@RequestParam("file") MultipartFile file, @PathVariable int numero){
-        if(!file.getContentType().startsWith("image/")){
+    public void agregarImagen(@RequestParam("file") MultipartFile file, @PathVariable int numero) {
+        if (!file.getContentType().startsWith("image/")) {
             throw new ArchivoInvalido(file.getContentType());
         }
         String nombreFisicoDelArchivo = storageService.store(file);
-        this.controlador.agregarImagenAReclamo(numero,nombreFisicoDelArchivo, file.getContentType());
+        this.controlador.agregarImagenAReclamo(numero, nombreFisicoDelArchivo, file.getContentType());
     }
 
-    @PostMapping("personas/{nombre}/{documento}")
-    public void addPersona(@PathVariable String nombre, @PathVariable String documento){
-        this.controlador.agregarPersona(documento, nombre);
+    @GetMapping("personas")
+    public List<PersonaView> getPersonas() {
+        return this.controlador.getPersonas();
     }
 
-    @DeleteMapping("personas/{documento}")
-    public void deletePersona(@PathVariable String documento){
-        this.controlador.eliminarPersona(documento);
+    @GetMapping("personas/{documento}")
+    public PersonaView getPersona(@PathVariable String documento) {
+        return this.controlador.getPersona(documento);
+    }
+
+    @PostMapping("personas/agregarPersona")
+    public PersonaView addPersona(@RequestBody AgregarPersonaBody body) {
+        return this.controlador.agregarPersona(body.documento, body.nombre);
+    }
+
+    @DeleteMapping("personas/{id}")
+    public void deletePersona(@PathVariable String id) {
+        this.controlador.eliminarPersona(id);
     }
 
     @GetMapping("personas/{documento}/reclamos")
-    public List<ReclamoView> getReclamoByPersona(@PathVariable String documento){
-        List<ReclamoView> reclamos = this.controlador.reclamosPorPersona(documento);
-        return reclamos;
+    public List<ReclamoView> getReclamoByPersona(@PathVariable String documento) {
+        return this.controlador.reclamosPorPersona(documento);
     }
 
     @GetMapping("unidades/{id}")
-    public UnidadView getUnidadById(@PathVariable int id){
+    public UnidadView getUnidadById(@PathVariable int id) {
         return this.controlador.getUnidadById(id);
     }
 
     @GetMapping("unidades/{codigo}/{piso}/{numero}/reclamos")
-    public List<ReclamoView> getReclamoByUnidad(@PathVariable int codigo ,@PathVariable String piso, @PathVariable String numero){
-        List<ReclamoView> reclamos = this.controlador.reclamosPorUnidad(codigo,piso,numero);
-        return reclamos;
+    public List<ReclamoView> getReclamoByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
+        return this.controlador.reclamosPorUnidad(codigo, piso, numero);
     }
 
     @GetMapping("unidades/{codigo}/{piso}/{numero}/duenios")
-    public List<PersonaView> getDueniosByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero){
-        List<PersonaView> duenios = this.controlador.dueniosPorUnidad(codigo, piso, numero);
-        return duenios;
+    public List<PersonaView> getDueniosByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
+        return this.controlador.dueniosPorUnidad(codigo, piso, numero);
     }
 
     @GetMapping("unidades/{codigo}/{piso}/{numero}/inquilinos")
-    public List<PersonaView> getInquilinosByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero){
+    public List<PersonaView> getInquilinosByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
         List<PersonaView> inquilinosPorUnidad = this.controlador.inquilinosPorUnidad(codigo, piso, numero);
         return inquilinosPorUnidad;
     }
 
-    @PostMapping("unidades/{codigo}/{piso}/{numero}/transferir/{documento}")
-    public void transferirUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @PathVariable String documento){
-        this.controlador.transferirUnidad(codigo, piso, numero,documento);
+    @PostMapping("unidades/{codigo}/{piso}/{numero}/transferir")
+    public void transferirUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @RequestBody BodyDocumento body) {
+        this.controlador.transferirUnidad(codigo, piso, numero, body.documento);
     }
 
-    @PostMapping("unidades/{codigo}/{piso}/{numero}/agregarDuenio/{documento}")
-    public void addDuenio(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @PathVariable String documento){
-        this.controlador.agregarDuenioUnidad(codigo, piso, numero,documento);
+    @PostMapping("unidades/{codigo}/{piso}/{numero}/agregarDuenio")
+    public void addDuenio(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @RequestBody BodyDocumento body) {
+        this.controlador.agregarDuenioUnidad(codigo, piso, numero, body.documento);
     }
 
-    @PostMapping("unidades/{codigo}/{piso}/{numero}/agregarInquilino/{documento}")
-    public void addInquilino(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @PathVariable String documento){
-        this.controlador.agregarInquilinoUnidad(codigo, piso, numero,documento);
+    @PostMapping("unidades/{codigo}/{piso}/{numero}/agregarInquilino")
+    public void addInquilino(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @RequestBody BodyDocumento body) {
+        this.controlador.agregarInquilinoUnidad(codigo, piso, numero, body.documento);
     }
 
-    @PostMapping("unidades/{codigo}/{piso}/{numero}/alquilar/{documento}")
-    public void alquilarUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @PathVariable String documento){
-        this.controlador.alquilarUnidad(codigo, piso, numero,documento);
+    @PostMapping("unidades/{codigo}/{piso}/{numero}/alquilar")
+    public void alquilarUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero, @RequestBody BodyDocumento body) {
+        this.controlador.alquilarUnidad(codigo, piso, numero, body.documento);
     }
 
     @PostMapping("unidades/{codigo}/{piso}/{numero}/habitar")
-    public void habitar(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero){
+    public void habitar(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
         this.controlador.habitarUnidad(codigo, piso, numero);
     }
 
     @PostMapping("unidades/{codigo}/{piso}/{numero}/liberar")
-    public void liberarUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero){
+    public void liberarUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
         this.controlador.liberarUnidad(codigo, piso, numero);
     }
 
+    @PostMapping("login")
+    public PersonaView login(@RequestBody LoginRequest body) {
+        PersonaView persona = this.controlador.logIn(body.documento, body.tipoUsuario.toString(), body.password);
+        return persona;
+    }
 }

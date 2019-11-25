@@ -2,10 +2,12 @@ package com.alquileres.api.controller;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+
 public interface StorageService {
 
     String store(MultipartFile file);
 
-//    Path load(String filename);
+    File load(String filename);
 
 }
