@@ -1,5 +1,6 @@
 package com.alquileres.api.controller;
 
+import com.alquileres.api.controller.models.*;
 import controlador.Controlador;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;

@@ -1,4 +1,4 @@
-package com.alquileres.api.controller;
+package com.alquileres.api.controller.models;
 
 import views.PersonaView;
 
@@ -6,7 +6,7 @@ public class UsuarioDto {
     private final String tipoUsuario;
     private final String documento;
 
-    UsuarioDto(PersonaView persona) {
+    public UsuarioDto(PersonaView persona) {
         this.tipoUsuario = persona.getTipo().name();
         this.documento = persona.getDocumento();
     }

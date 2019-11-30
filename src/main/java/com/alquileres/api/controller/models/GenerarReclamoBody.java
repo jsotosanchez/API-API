@@ -1,4 +1,4 @@
-package com.alquileres.api.controller;
+package com.alquileres.api.controller.models;
 
 public class GenerarReclamoBody {
     public int edificio;
