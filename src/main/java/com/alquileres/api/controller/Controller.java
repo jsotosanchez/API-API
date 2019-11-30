@@ -72,7 +72,7 @@ public class Controller {
     }
 
     @GetMapping("edificios/{id}/habilitados")
-    public Set<PersonaView> getHabilitadosByEdificio(@PathVariable int id) {
+    public List<PersonaView> getHabilitadosByEdificio(@PathVariable int id) {
         return this.controlador.habilitadosPorEdificio(id);
     }
 
@@ -86,7 +86,7 @@ public class Controller {
         if(tipoUsuario.equals(TipoUsuario.administrador)){
             return this.controlador.getReclamos();
         }
-        return this.controlador.getReclamosByPersona(documento);
+        return this.controlador.reclamosPorPersona(documento);
     }
 
     @PostMapping("reclamos/generar")
@@ -116,12 +116,12 @@ public class Controller {
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.add("Content-Type", imagen.getTipo());
         InputStreamResource body = new InputStreamResource(new FileInputStream(fileImagen));
-        return new ResponseEntity(body,responseHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(body, responseHeaders, HttpStatus.OK);
     }
 
     @PostMapping("reclamos/{numero}/imagenes")
     public void agregarImagen(@RequestParam("file") MultipartFile file, @PathVariable int numero) {
-        if (!file.getContentType().startsWith("image/")) {
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
             throw new ArchivoInvalido(file.getContentType());
         }
         String nombreFisicoDelArchivo = storageService.store(file);
@@ -140,7 +140,7 @@ public class Controller {
 
     @PostMapping("personas/agregarPersona")
     public PersonaView addPersona(@RequestBody AgregarPersonaBody body) {
-        return this.controlador.agregarPersona(body.documento, body.nombre);
+        return this.controlador.agregarPersona(body.documento, body.nombre, TipoUsuario.valueOf(body.tipo), body.pass);
     }
 
     @DeleteMapping("personas/{id}")
@@ -170,8 +170,7 @@ public class Controller {
 
     @GetMapping("unidades/{codigo}/{piso}/{numero}/inquilinos")
     public List<PersonaView> getInquilinosByUnidad(@PathVariable int codigo, @PathVariable String piso, @PathVariable String numero) {
-        List<PersonaView> inquilinosPorUnidad = this.controlador.inquilinosPorUnidad(codigo, piso, numero);
-        return inquilinosPorUnidad;
+        return this.controlador.inquilinosPorUnidad(codigo, piso, numero);
     }
 
     @PostMapping("unidades/{codigo}/{piso}/{numero}/transferir")
@@ -205,8 +204,8 @@ public class Controller {
     }
 
     @PostMapping("login")
-    public PersonaView login(@RequestBody LoginRequest body) {
-        PersonaView persona = this.controlador.logIn(body.documento, body.tipoUsuario.toString(), body.password);
-        return persona;
+    public UsuarioDto login(@RequestBody LoginRequest body) {
+        PersonaView persona = this.controlador.logIn(body.documento, body.password);
+        return new UsuarioDto(persona);
     }
 }

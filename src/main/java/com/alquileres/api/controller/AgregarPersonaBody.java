@@ -1,6 +1,8 @@
 package com.alquileres.api.controller;
 
-public class AgregarPersonaBody {
-    public String documento;
-    public String nombre;
+class AgregarPersonaBody {
+    String documento;
+    String nombre;
+    String tipo;
+    String pass;
 }
