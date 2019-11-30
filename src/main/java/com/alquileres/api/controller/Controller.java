@@ -94,13 +94,13 @@ public class Controller {
 
     @PostMapping("reclamos/generar")
     public ResponseEntity<Void> addReclamo(@RequestHeader("X-Custom-TipoUsuario") TipoUsuario tipoUsuario, @RequestBody GenerarReclamoBody body, @RequestHeader("X-Custom-Documento") String documento) {
-        if (body.piso.equals("") && body.numero.equals("")) {
+        if (!body.piso.equals("") && !body.numero.equals("")) {
             UnidadView unidad = this.controlador.getUnidad(body.edificio, body.piso, body.numero);
 
             if (unidad.isHabitado() && tipoUsuario.equals(TipoUsuario.duenio))
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-            if (!unidad.isHabitado() && !tipoUsuario.equals(TipoUsuario.duenio))
+            if (!tipoUsuario.equals(TipoUsuario.duenio))
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
             this.controlador.agregarReclamoAUnidad(body.edificio, body.piso, body.numero, documento, body.descripcion);
