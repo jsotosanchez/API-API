@@ -44,8 +44,10 @@ public class Controller {
         if (tipoUsuario.equals(TipoUsuario.administrador)) {
             return this.controlador.getEdificios();
         }
-
+        if (tipoUsuario.equals(TipoUsuario.duenio))
         return this.controlador.getEdificiosPorDuenio(documento);
+
+        return this.controlador.getEdificiosPorInquilino(documento);
     }
 
     @GetMapping("edificios/{id}")
@@ -91,8 +93,21 @@ public class Controller {
     }
 
     @PostMapping("reclamos/generar")
-    public void addReclamo(@RequestBody GenerarReclamoBody body, @RequestHeader("X-Custom-Documento") String documento) {
-        this.controlador.agregarReclamo(body.edificio, body.piso, body.numero, documento, body.ubicacion, body.descripcion);
+    public ResponseEntity<Void> addReclamo(@RequestHeader("X-Custom-TipoUsuario") TipoUsuario tipoUsuario, @RequestBody GenerarReclamoBody body, @RequestHeader("X-Custom-Documento") String documento) {
+        if (body.piso != "" && body.numero != "") {
+            UnidadView unidad = this.controlador.getUnidad(body.edificio, body.piso, body.numero);
+
+            if (unidad.isHabitado() && tipoUsuario.equals(TipoUsuario.duenio))
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+            if (!unidad.isHabitado() && !tipoUsuario.equals(TipoUsuario.duenio))
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+            this.controlador.agregarReclamoAUnidad(body.edificio, body.piso, body.numero, documento, body.descripcion);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+        this.controlador.agregarReclamoAEdificio(body.edificio, documento, body.ubicacion, body.descripcion);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PatchMapping("reclamos/{numero}/cambiarEstado/{estado}")
