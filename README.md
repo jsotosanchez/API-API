@@ -1,6 +1,7 @@
 # Spring Rest API for school project
 
 # Things I learned in this project
-- Creating a REST API with spring
-- Managing files through HTTP
-- Handling BodyRequests, Headers.
+- Create Maven project
+- Create REST API with spring
+- Manage files through HTTP
+- Handle BodyRequests, Headers.
