@@ -110,9 +110,9 @@ public class Controller {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @PatchMapping("reclamos/{numero}/cambiarEstado/{estado}")
-    public void cambiarEstadoReclamo(@PathVariable int numero, @PathVariable String estado) {
-        this.controlador.cambiarEstado(numero, Estado.valueOf(estado));
+    @PatchMapping("reclamos/{numero}/cambiarEstado")
+    public void cambiarEstadoReclamo(@PathVariable int numero, @RequestBody BodyEstado body) {
+        this.controlador.cambiarEstado(numero, Estado.valueOf(body.estado));
     }
 
     @GetMapping("reclamos/{id}")
