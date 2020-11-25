@@ -3,4 +3,3 @@
 # Things I learned in this project
 - Creating REST API with spring
 - Managing files through HTTP
-- Handling BodyRequests, Headers.
